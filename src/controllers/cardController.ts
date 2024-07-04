@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import Card from "../models/card";
 import { Types } from "mongoose";
 import errorHandler from "../middleware/errorHandler";
-
+import { BAD_REQUEST, CREATED, NOT_FOUND, OK } from "../status/status";
 interface CustomRequest extends Request {
   user?: {
     _id: Types.ObjectId;
@@ -19,7 +19,7 @@ export const createCard = async (
 
   if (!ownerId) {
     return res
-      .status(400)
+      .status(BAD_REQUEST)
       .json({ message: "Переданы некорректные данные при создании карточки" });
   }
 
@@ -31,7 +31,7 @@ export const createCard = async (
 
   try {
     const card = await newCard.save();
-    res.status(201).json(card);
+    res.status(CREATED).json(card);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -48,11 +48,11 @@ export const deleteCard = async (
 
     if (!deletedCard) {
       return res
-        .status(404)
+        .status(NOT_FOUND)
         .json({ message: "Карточка с указанным _id не найдена" });
     }
 
-    res.status(200).json(deletedCard);
+    res.status(OK).json(deletedCard);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -65,7 +65,7 @@ export const getAllCards = async (
 ) => {
   try {
     const cards = await Card.find().populate("owner").populate("likes");
-    res.status(200).json(cards);
+    res.status(OK).json(cards);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -83,9 +83,9 @@ export const getCardById = async (
       .populate("owner")
       .populate("likes");
     if (!card) {
-      return res.status(404).json({ message: "Карточка не найдена" });
+      return res.status(NOT_FOUND).json({ message: "Карточка не найдена" });
     }
-    res.status(200).json(card);
+    res.status(OK).json(card);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -102,7 +102,7 @@ export const likeCard = async (
 
     if (!userId) {
       return res
-        .status(400)
+        .status(BAD_REQUEST)
         .send({ message: "Переданы некорректные данные для постановки лайка" });
     }
 
@@ -114,11 +114,11 @@ export const likeCard = async (
 
     if (!updatedCard) {
       return res
-        .status(404)
+        .status(NOT_FOUND)
         .send({ message: "Передан несуществующий _id карточки" });
     }
 
-    res.status(200).json(updatedCard);
+    res.status(OK).json(updatedCard);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -135,7 +135,7 @@ export const dislikeCard = async (
 
     if (!userId) {
       return res
-        .status(400)
+        .status(BAD_REQUEST)
         .send({ message: "Переданы некорректные данные для снятия лайка" });
     }
 
@@ -147,11 +147,11 @@ export const dislikeCard = async (
 
     if (!updatedCard) {
       return res
-        .status(404)
+        .status(NOT_FOUND)
         .send({ message: "Передан несуществующий _id карточки" });
     }
 
-    res.status(200).json(updatedCard);
+    res.status(OK).json(updatedCard);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }

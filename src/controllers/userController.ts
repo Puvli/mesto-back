@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../models/user";
 import errorHandler from "../middleware/errorHandler";
+import { BAD_REQUEST, CREATED, NOT_FOUND, OK } from "../status/status";
 
 export const getAllUsers = async (
   req: Request,
@@ -25,7 +26,9 @@ export const getUserById = async (
     if (user) {
       res.json(user);
     } else {
-      res.status(404).send({ message: "Пользователь по указанному _id не найден" });
+      res
+        .status(NOT_FOUND)
+        .send({ message: "Пользователь по указанному _id не найден" });
     }
   } catch (err) {
     errorHandler(err as Error, req, res, next);
@@ -46,10 +49,14 @@ export const createUser = async (
 
   try {
     const user = await newUser.save();
-    if(!user) {
-      return res.status(400).send({ message: "Переданы некорректные данные при создании пользователя" });
+    if (!user) {
+      return res
+        .status(BAD_REQUEST)
+        .send({
+          message: "Переданы некорректные данные при создании пользователя",
+        });
     }
-    res.status(201).json(user);
+    res.status(CREATED).json(user);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -65,7 +72,9 @@ export const updateProfile = async (
     const userId = req.user?._id; // Получаем _id пользователя из req.user, если он существует
 
     if (!userId) {
-      return res.status(404).send({ message: "404 — Пользователь с указанным _id не найден" });
+      return res
+        .status(NOT_FOUND)
+        .send({ message: "404 — Пользователь с указанным _id не найден" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -76,11 +85,13 @@ export const updateProfile = async (
 
     if (!updatedUser) {
       return res
-        .status(400)
-        .send({ message: " Переданы некорректные данные при обновлении профиля" });
+        .status(BAD_REQUEST)
+        .send({
+          message: " Переданы некорректные данные при обновлении профиля",
+        });
     }
 
-    res.status(200).json(updatedUser);
+    res.status(OK).json(updatedUser);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }
@@ -96,7 +107,9 @@ export const updateAvatar = async (
     const userId = req.user?._id; // Получаем _id пользователя из req.user, если он существует
 
     if (!userId) {
-      return res.status(404).send({ message: "Пользователь с указанным _id не найден" });
+      return res
+        .status(NOT_FOUND)
+        .send({ message: "Пользователь с указанным _id не найден" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -107,11 +120,13 @@ export const updateAvatar = async (
 
     if (!updatedUser) {
       return res
-        .status(400)
-        .send({ message: "Переданы некорректные данные при обновлении аватара" });
+        .status(BAD_REQUEST)
+        .send({
+          message: "Переданы некорректные данные при обновлении аватара",
+        });
     }
 
-    res.status(200).json(updatedUser);
+    res.status(OK).json(updatedUser);
   } catch (err) {
     errorHandler(err as Error, req, res, next);
   }

@@ -1,3 +1,4 @@
+import { INTERNAL_SERVER_ERROR } from '../status/status';
 import { Request, Response, NextFunction } from 'express';
 
 // Middleware для обработки ошибок
@@ -10,23 +11,10 @@ const errorHandler = (
   console.error('Ошибка:', err);
 
   // Определяем стандартный код ошибки
-  let statusCode = 500;
-  let message = 'Ошибка по умолчанию';
-
-  // Проверяем тип ошибки и устанавливаем соответствующий статус код
-  // if (err instanceof SyntaxError) {
-  //   statusCode = 400;
-  //   message = 'Переданы некорректные данные';
-  // } else if (err.name === 'ValidationError') {
-  //   statusCode = 400;
-  //   message = err.message; // Ошибка валидации
-  // } else if (err.name === 'CastError') {
-  //   statusCode = 404;
-  //   message = 'Пользователь не найден';
-  // }
+  let message = 'На сервере произошла ошибка';
 
   // Отправляем ответ с ошибкой
-  res.status(statusCode).json({ message });
+  res.status(INTERNAL_SERVER_ERROR).json({ message });
 };
 
 export default errorHandler;
