@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import Card from "../models/card";
 import { Types } from "mongoose";
-import errorHandler from "../middleware/errorHandler";
 import { BAD_REQUEST, CREATED, NOT_FOUND, OK } from "../status/status";
+
 interface CustomRequest extends Request {
   user?: {
     _id: Types.ObjectId;
@@ -18,9 +18,10 @@ export const createCard = async (
   const ownerId = req.user?._id;
 
   if (!ownerId) {
-    return res
-      .status(BAD_REQUEST)
-      .json({ message: "Переданы некорректные данные при создании карточки" });
+    return next({
+      status: BAD_REQUEST,
+      message: "Переданы некорректные данные при создании карточки",
+    });
   }
 
   const newCard = new Card({
@@ -33,28 +34,33 @@ export const createCard = async (
     const card = await newCard.save();
     res.status(CREATED).json(card);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передаем ошибку в централизованную обработку ошибок
   }
 };
 
-// Удалить карточку
 export const deleteCard = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const deletedCard = await Card.findByIdAndDelete(req.params.cardId);
-
-    if (!deletedCard) {
-      return res
-        .status(NOT_FOUND)
-        .json({ message: "Карточка с указанным _id не найдена" });
+    const card = await Card.findById(req.params.cardId);
+    if (!card) {
+      return next({
+        status: NOT_FOUND,
+        message: "Карточка не найдена",
+      });
     }
-
-    res.status(OK).json(deletedCard);
+    if (!card.owner.equals(req.user!._id)) {
+      return next({
+        status: 403,
+        message: "Недостаточно прав для удаления карточки",
+      });
+    }
+    await card.deleteOne();
+    res.send({ message: "Карточка удалена" });
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передаем ошибку в централизованную обработку ошибок
   }
 };
 
@@ -67,7 +73,7 @@ export const getAllCards = async (
     const cards = await Card.find().populate("owner").populate("likes");
     res.status(OK).json(cards);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передаем ошибку в централизованную обработку ошибок
   }
 };
 
@@ -83,15 +89,17 @@ export const getCardById = async (
       .populate("owner")
       .populate("likes");
     if (!card) {
-      return res.status(NOT_FOUND).json({ message: "Карточка не найдена" });
+      return next({
+        status: NOT_FOUND,
+        message: "Карточка не найдена",
+      });
     }
     res.status(OK).json(card);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передаем ошибку в централизованную обработку ошибок
   }
 };
 
-// Поставить лайк карточке
 export const likeCard = async (
   req: Request,
   res: Response,
@@ -101,9 +109,10 @@ export const likeCard = async (
     const userId = req.user?._id; // Получаем _id пользователя из req.user, если он существует
 
     if (!userId) {
-      return res
-        .status(BAD_REQUEST)
-        .send({ message: "Переданы некорректные данные для постановки лайка" });
+      return next({
+        status: BAD_REQUEST,
+        message: "Переданы некорректные данные для постановки лайка",
+      });
     }
 
     const updatedCard = await Card.findByIdAndUpdate(
@@ -113,18 +122,18 @@ export const likeCard = async (
     );
 
     if (!updatedCard) {
-      return res
-        .status(NOT_FOUND)
-        .send({ message: "Передан несуществующий _id карточки" });
+      return next({
+        status: NOT_FOUND,
+        message: "Передан несуществующий _id карточки",
+      });
     }
 
     res.status(OK).json(updatedCard);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передаем ошибку в централизованную обработку ошибок
   }
 };
 
-// Убрать лайк с карточки
 export const dislikeCard = async (
   req: Request,
   res: Response,
@@ -134,9 +143,10 @@ export const dislikeCard = async (
     const userId = req.user?._id; // Получаем _id пользователя из req.user, если он существует
 
     if (!userId) {
-      return res
-        .status(BAD_REQUEST)
-        .send({ message: "Переданы некорректные данные для снятия лайка" });
+      return next({
+        status: BAD_REQUEST,
+        message: "Переданы некорректные данные для снятия лайка",
+      });
     }
 
     const updatedCard = await Card.findByIdAndUpdate(
@@ -146,13 +156,14 @@ export const dislikeCard = async (
     );
 
     if (!updatedCard) {
-      return res
-        .status(NOT_FOUND)
-        .send({ message: "Передан несуществующий _id карточки" });
+      return next({
+        status: NOT_FOUND,
+        message: "Передан несуществующий _id карточки",
+      });
     }
 
     res.status(OK).json(updatedCard);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передаем ошибку в централизованную обработку ошибок
   }
 };

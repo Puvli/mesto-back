@@ -1,4 +1,4 @@
-import { INTERNAL_SERVER_ERROR } from '../status/status';
+import { INTERNAL_SERVER_ERROR, CONFLICT } from '../status/status';
 import { Request, Response, NextFunction } from 'express';
 
 // Middleware для обработки ошибок
@@ -12,6 +12,12 @@ const errorHandler = (
 
   // Определяем стандартный код ошибки
   let message = 'На сервере произошла ошибка';
+
+   // Обработка ошибок Mongoose по коду 11000 (дубликат уникального поля)
+   if (err.name === 'MongoError' && (err as any).code === 11000) {
+    message = 'Пользователь с таким email уже существует';
+    return res.status(CONFLICT).json({ message });
+  }
 
   // Отправляем ответ с ошибкой
   res.status(INTERNAL_SERVER_ERROR).json({ message });

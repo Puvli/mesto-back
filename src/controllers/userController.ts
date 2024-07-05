@@ -1,7 +1,9 @@
-import { Request, Response, NextFunction } from "express";
-import User, { IUser } from "../models/user";
-import errorHandler from "../middleware/errorHandler";
-import { BAD_REQUEST, CREATED, NOT_FOUND, OK } from "../status/status";
+import { Request, Response, NextFunction } from 'express';
+import User, { IUser } from '../models/user';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import errorHandler from '../middleware/errorHandler';
+import { BAD_REQUEST, CREATED, NOT_FOUND, OK } from '../status/status';
 
 export const getAllUsers = async (
   req: Request,
@@ -9,10 +11,10 @@ export const getAllUsers = async (
   next: NextFunction
 ) => {
   try {
-    const users = await User.find();
+    const users = await User.find({});
     res.json(users);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передача ошибки в errorHandler
   }
 };
 
@@ -26,12 +28,10 @@ export const getUserById = async (
     if (user) {
       res.json(user);
     } else {
-      res
-        .status(NOT_FOUND)
-        .send({ message: "Пользователь по указанному _id не найден" });
+      res.status(NOT_FOUND).json({ message: 'Пользователь не найден' });
     }
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передача ошибки в errorHandler
   }
 };
 
@@ -40,94 +40,120 @@ export const createUser = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { name, about, avatar } = req.body;
-  const newUser = new User({
-    name,
-    about,
-    avatar,
-  });
-
   try {
-    const user = await newUser.save();
-    if (!user) {
-      return res
-        .status(BAD_REQUEST)
-        .send({
-          message: "Переданы некорректные данные при создании пользователя",
-        });
+    const { name, about, avatar, email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(BAD_REQUEST).json({ message: 'Email и пароль обязательны' });
     }
-    res.status(CREATED).json(user);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      name: name || 'Жак-Ив Кусто',
+      about: about || 'Исследователь',
+      avatar: avatar || 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+      email: email,
+      password: hashedPassword,
+    });
+
+
+    await newUser.save();
+
+    res.status(CREATED).json({
+      _id: newUser._id,
+      name: newUser.name,
+      about: newUser.about,
+      avatar: newUser.avatar,
+      email: newUser.email,
+    });
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передача ошибки в errorHandler
   }
 };
 
-// Обновление профиля пользователя
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(BAD_REQUEST).json({ message: 'Неправильные почта или пароль' });
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      return res.status(BAD_REQUEST).json({ message: 'Неправильные почта или пароль' });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatch) {
+      return res.status(BAD_REQUEST).json({ message: 'Неправильные почта или пароль' });
+    }
+
+    const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+    res.cookie('token', token, { httpOnly: true });
+    res.status(OK).json({ token });
+  } catch (err) {
+    next(err); // Передача ошибки в errorHandler
+  }
+};
+
+
 export const updateProfile = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const userId = req.user?._id; // Получаем _id пользователя из req.user, если он существует
+    const userId = req.user?._id;
 
     if (!userId) {
-      return res
-        .status(NOT_FOUND)
-        .send({ message: "404 — Пользователь с указанным _id не найден" });
+      return res.status(NOT_FOUND).json({ message: 'Пользователь не найден' });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { ...req.body }, // Обновляем профиль пользователя согласно пришедшему телу запроса
+      { ...req.body },
       { new: true, runValidators: true }
     );
 
     if (!updatedUser) {
-      return res
-        .status(BAD_REQUEST)
-        .send({
-          message: " Переданы некорректные данные при обновлении профиля",
-        });
+      return res.status(BAD_REQUEST).json({ message: 'Переданы некорректные данные' });
     }
 
-    res.status(OK).json(updatedUser);
+    res.json(updatedUser);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передача ошибки в errorHandler
   }
 };
 
-// Обновление аватара пользователя
 export const updateAvatar = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const userId = req.user?._id; // Получаем _id пользователя из req.user, если он существует
+    const userId = req.user?._id;
 
     if (!userId) {
-      return res
-        .status(NOT_FOUND)
-        .send({ message: "Пользователь с указанным _id не найден" });
+      return res.status(NOT_FOUND).json({ message: 'Пользователь не найден' });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { avatar: req.body.avatar }, // Обновляем аватар пользователя
+      { avatar: req.body.avatar },
       { new: true, runValidators: true }
     );
 
     if (!updatedUser) {
-      return res
-        .status(BAD_REQUEST)
-        .send({
-          message: "Переданы некорректные данные при обновлении аватара",
-        });
+      return res.status(BAD_REQUEST).json({ message: 'Переданы некорректные данные' });
     }
 
-    res.status(OK).json(updatedUser);
+    res.json(updatedUser);
   } catch (err) {
-    errorHandler(err as Error, req, res, next);
+    next(err); // Передача ошибки в errorHandler
   }
 };
