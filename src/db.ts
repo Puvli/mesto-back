@@ -1,8 +1,9 @@
+import config from './config';
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
   try {
-    await mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
+    await mongoose.connect(config.dbConnectionString);
     console.log('MongoDB connected');
   } catch (err) {
     const error = err as Error;

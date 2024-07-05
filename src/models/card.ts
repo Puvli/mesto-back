@@ -1,5 +1,7 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import User from './user'; // Импортируем модель User
+import { urlRegex } from '../validation/validation';
+import validator from 'validator';
 
 // Интерфейс для карточки
 interface ICard extends Document {
@@ -20,6 +22,12 @@ const cardSchema = new Schema<ICard>({
   },
   link: {
     type: String,
+    validate: {
+      validator: (v: string) => {
+        return validator.isURL(v) && urlRegex.test(v);
+      },
+      message: 'Некорректный URL',
+    },
     required: true,
   },
   owner: {

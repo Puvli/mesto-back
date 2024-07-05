@@ -9,6 +9,7 @@ import { errorLogger, requestLogger } from "./middleware/logger";
 import { Request, Response, NextFunction } from "express";
 import { createUser, login } from "./controllers/userController";
 import { celebrate, Joi } from "celebrate";
+import dotenv from 'dotenv';
 
 const app = express();
 const port = process.env.PORT || 3000;

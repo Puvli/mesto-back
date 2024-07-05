@@ -1,10 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { urlRegex } from '../validation/validation';
 import validator from 'validator';
-
-// Регулярное выражение для проверки URL аватара
-const avatarURLRegex = new RegExp(
-  /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w.-]*)*\/?$/
-);
 
 export interface IUser extends Document {
   name: string;
@@ -32,7 +28,7 @@ const userSchema = new Schema<IUser>({
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
     validate: {
       validator: (v: string) => {
-        return validator.isURL(v) && avatarURLRegex.test(v);
+        return validator.isURL(v) && urlRegex.test(v);
       },
       message: 'Некорректный URL',
     },

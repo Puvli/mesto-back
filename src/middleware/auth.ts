@@ -1,6 +1,11 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { UNAUTHORIZED } from "../status/status";
+import dotenv from "dotenv";
+import { JWT_SECRET } from "../config";
+
+// Загружаем переменные окружения из файла .env
+dotenv.config();
 
 export default (req: Request, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
@@ -13,7 +18,8 @@ export default (req: Request, res: Response, next: NextFunction) => {
   let payload: JwtPayload;
 
   try {
-    payload = jwt.verify(token, "some-secret-key") as JwtPayload;
+    // payload = jwt.verify(token, "some-secret-key") as JwtPayload;
+    payload = jwt.verify(token, JWT_SECRET,) as JwtPayload;
     req.user = { _id: payload._id };
 
     next();
