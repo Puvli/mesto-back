@@ -3,11 +3,12 @@ import { Request, Response, NextFunction } from "express";
 import { UNAUTHORIZED } from "../status/status";
 import dotenv from "dotenv";
 import { JWT_SECRET } from "../config";
+import { CustomRequest } from "controllers/userController";
 
 // Загружаем переменные окружения из файла .env
 dotenv.config();
 
-export default (req: Request, res: Response, next: NextFunction) => {
+export default (req: CustomRequest, res: Response, next: NextFunction) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith("Bearer ")) {

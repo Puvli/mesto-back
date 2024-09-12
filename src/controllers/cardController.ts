@@ -2,12 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import Card from "../models/card";
 import { Types } from "mongoose";
 import { BAD_REQUEST, CREATED, NOT_FOUND, OK } from "../status/status";
-
-interface CustomRequest extends Request {
-  user?: {
-    _id: Types.ObjectId;
-  };
-}
+import { CustomRequest } from "./userController";
+// interface CustomRequest extends Request {
+//   user?: {
+//     _id: Types.ObjectId;
+//   };
+// }
 
 export const createCard = async (
   req: CustomRequest,
@@ -39,7 +39,7 @@ export const createCard = async (
 };
 
 export const deleteCard = async (
-  req: Request,
+  req: CustomRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -101,7 +101,7 @@ export const getCardById = async (
 };
 
 export const likeCard = async (
-  req: Request,
+  req: CustomRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -135,7 +135,7 @@ export const likeCard = async (
 };
 
 export const dislikeCard = async (
-  req: Request,
+  req: CustomRequest,
   res: Response,
   next: NextFunction
 ) => {
